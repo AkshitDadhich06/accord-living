@@ -1,0 +1,136 @@
+/* ===== COMPLAINT MANAGEMENT PAGE ===== */
+
+/* Stats Grid — override existing inline style */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  margin-bottom: 28px;
+}
+
+/* Stat Cards — colored top border per card type */
+.cm-stat-total    { border-top: 4px solid #3b82f6 !important; }
+.cm-stat-pending  { border-top: 4px solid #f59e0b !important; }
+.cm-stat-progress { border-top: 4px solid #6366f1 !important; }
+.cm-stat-resolved { border-top: 4px solid #10b981 !important; }
+
+/* Remove the overflow:hidden from the inline style so the top border shows */
+.cm-stat-total,
+.cm-stat-pending,
+.cm-stat-progress,
+.cm-stat-resolved {
+  overflow: visible !important;
+  /* Compensate: shift border-radius on the top to follow the border */
+  border-radius: 0 0 12px 12px !important;
+}
+
+/* Table row hover — replaces broken Tailwind class */
+.cm-table-row {
+  border-bottom: 1px solid #f3f4f6;
+  transition: background-color 0.15s ease;
+}
+
+.cm-table-row:hover {
+  background-color: #f8fafc !important;
+}
+
+.complaint-management-page {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.cm-controls-bar {
+  width: 100%;
+}
+
+.cm-search-shell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 46px;
+  padding: 0 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 12px;
+  background: #ffffff;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.cm-search-shell:focus-within {
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+}
+
+.cm-search-icon {
+  color: #9ca3af;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.cm-search-shell input::placeholder {
+  color: #94a3b8;
+}
+
+.cm-search-clear {
+  border: 0;
+  background: rgba(79, 70, 229, 0.1);
+  color: #4f46e5;
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 5px 10px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.cm-search-clear:hover {
+  background: rgba(79, 70, 229, 0.18);
+}
+
+.cm-filter-group .cm-action-btn {
+  white-space: nowrap;
+}
+
+.cm-table-scroll {
+  width: 100%;
+}
+
+.cm-table {
+  width: 100%;
+}
+
+/* ===== RESPONSIVE ===== */
+
+@media (max-width: 900px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .cm-controls-bar {
+    padding: 14px 16px !important;
+  }
+
+  .cm-search-shell {
+    min-height: 44px;
+  }
+}
+
+@media (max-width: 540px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .cm-filter-group {
+    justify-content: flex-start !important;
+  }
+}
+
+/* ===== DARK MODE ===== */
+
+@media (prefers-color-scheme: dark) {
+  .cm-table-row:hover {
+    background-color: #1e293b !important;
+  }
+}

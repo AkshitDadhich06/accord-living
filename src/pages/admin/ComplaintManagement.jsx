@@ -1,0 +1,505 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import { PageHeader, Card, StatusBadge, Button } from '../../components/ui';
+import { Search, Filter, Download, Eye, CheckCircle, Clock, AlertCircle, MessageSquare, MoreVertical, Trash2 } from 'lucide-react';
+import { useToast } from '../../components/ui/Toast';
+import { subscribeToAllComplaints, updateComplaintStatus, deleteComplaint } from '../../firebase/complaintService';
+import Modal from '../../components/ui/Modal.jsx';
+import { useAuth } from '../../context/AuthContext';
+import './ComplaintManagement.css';
+
+const ComplaintManagement = () => {
+    const toast = useToast();
+    const { user } = useAuth();
+    const societyId = user?.societyId;
+    const [complaints, setComplaints] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [statusFilter, setStatusFilter] = useState('All');
+    const [selectedComplaint, setSelectedComplaint] = useState(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [statusUpdate, setStatusUpdate] = useState('');
+
+    // Subscribe to all complaints from Firestore
+    useEffect(() => {
+        if (!societyId) return;
+        const unsub = subscribeToAllComplaints(societyId, (data) => {
+            setComplaints(data);
+            setLoading(false);
+        });
+        return () => unsub();
+    }, [societyId]);
+
+    // Calculate Stats
+    const stats = useMemo(() => {
+        const total = complaints.length;
+        const pending = complaints.filter(c => c.status === 'Pending').length;
+        const resolved = complaints.filter(c => c.status === 'Resolved').length;
+        const inProgress = complaints.filter(c => c.status === 'In Progress').length;
+        return { total, pending, resolved, inProgress };
+    }, [complaints]);
+
+    // Filter Logic
+    const filteredComplaints = useMemo(() => {
+        return complaints.filter(c => {
+            const matchesSearch = 
+                c.residentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                c.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                c.category.toLowerCase().includes(searchTerm.toLowerCase());
+            const matchesStatus = statusFilter === 'All' || c.status === statusFilter;
+            return matchesSearch && matchesStatus;
+        });
+    }, [complaints, searchTerm, statusFilter]);
+
+    const handleViewDetails = (complaint) => {
+        setSelectedComplaint(complaint);
+        setStatusUpdate(complaint.status);
+        setIsModalOpen(true);
+    };
+
+    const handleCloseModal = () => {
+        setIsModalOpen(false);
+        setSelectedComplaint(null);
+    };
+
+    const handleStatusChange = async () => {
+        if (!selectedComplaint || !statusUpdate) return;
+        try {
+            await updateComplaintStatus(selectedComplaint.id, statusUpdate);
+            toast.success(`Complaint status updated to ${statusUpdate}`, 'Status Updated');
+            handleCloseModal();
+        } catch (err) {
+            toast.error('Failed to update status', 'Error');
+        }
+    };
+
+    const handleDelete = async (id) => {
+        if (window.confirm('Are you sure you want to delete this complaint?')) {
+            try {
+                await deleteComplaint(id);
+                toast.success('Complaint deleted successfully', 'Deleted');
+            } catch (err) {
+                toast.error('Failed to delete complaint', 'Error');
+            }
+        }
+    };
+
+    const getPriorityColor = (priority) => {
+        // Default priority is 'Medium' if not specified
+        switch(priority || 'Medium') {
+            case 'High': return '#ef4444';
+            case 'Medium': return '#f59e0b';
+            case 'Low': return '#10b981';
+            default: return '#6b7280';
+        }
+    };
+
+    // Inline Styles for Dashboard
+    const styles = {
+        pageContainer: {
+            maxWidth: '1320px',
+            margin: '0 auto',
+            width: '100%',
+            padding: '0 16px',
+            boxSizing: 'border-box',
+        },
+        statsGrid: {
+            width: '100%'
+        },
+        statCard: {
+            padding: '24px',
+            borderRadius: '12px',
+            backgroundColor: 'white',
+            boxShadow: '0 2px 10px rgba(0,0,0,0.05)',
+            border: '1px solid #e5e7eb',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            height: '140px',
+            transition: 'transform 0.2s',
+            cursor: 'default',
+            position: 'relative',
+            overflow: 'hidden',
+            gap: '12px'
+        },
+        statHeader: {
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            margin: 0 // Remove margin to rely on gap for perfect spacing
+        },
+        statLabel: {
+            color: '#6b7280',
+            fontSize: '14px',
+            fontWeight: '600',
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em'
+        },
+        statValue: {
+            fontSize: '32px',
+            fontWeight: '700',
+            color: '#111827',
+            margin: '4px 0 0 0',
+            lineHeight: 1
+        },
+        iconBox: (color) => ({
+            padding: '12px',
+            borderRadius: '12px',
+            backgroundColor: `${color}15`,
+            color: color,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+        }),
+        controlsBar: {
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: '16px',
+            justifyContent: 'space-between',
+            alignItems: 'stretch',
+            marginBottom: '24px',
+            backgroundColor: 'white',
+            padding: '16px 24px',
+            borderRadius: '12px',
+            border: '1px solid #e5e7eb',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
+        },
+        searchBox: {
+            flex: '1 1 380px',
+            minWidth: '260px'
+        },
+        searchInput: {
+            width: '100%',
+            height: '46px', 
+            padding: '0 14px',
+            border: 'none',
+            fontSize: '14px',
+            outline: 'none',
+            background: 'transparent',
+            color: '#111827'
+        },
+        filterGroup: {
+            display: 'flex',
+            gap: '12px',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            justifyContent: 'flex-end',
+            flex: '1 1 380px'
+        },
+        filterSelect: {
+            height: '42px',
+            padding: '0 36px 0 16px',
+            borderRadius: '8px',
+            border: '1px solid #d1d5db',
+            fontSize: '14px',
+            outline: 'none',
+            minWidth: '170px',
+            backgroundColor: 'white',
+            cursor: 'pointer',
+            flexShrink: 0,
+        },
+        tableContainer: {
+            backgroundColor: 'white',
+            borderRadius: '12px',
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+            border: '1px solid #e5e7eb',
+            overflow: 'hidden'
+        },
+        tableHeader: {
+            backgroundColor: '#f9fafb',
+            padding: '16px 24px',
+            borderBottom: '1px solid #e5e7eb',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
+        },
+        rowActionBtn: {
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            padding: '6px',
+            borderRadius: '4px',
+            transition: 'background-color 0.2s',
+            color: '#6b7280'
+        }
+    };
+
+    return (
+        <div className="complaint-management-page" style={styles.pageContainer}>
+            {/* Custom Header for strict alignment */}
+            <div style={{ marginBottom: '32px' }}>
+                <h1 style={{ margin: '0 0 8px 0', fontSize: '24px', fontWeight: '700', color: '#111827' }}>Complaint Management</h1>
+                <p style={{ margin: 0, color: '#6b7280', fontSize: '14px' }}>Efficiently track, manage, and resolve resident issues</p>
+            </div>
+
+            {/* Stats Dashboard */}
+            <div className="stats-grid" style={styles.statsGrid}>
+                <div className="cm-stat-total" style={styles.statCard}>
+                    <div style={styles.statHeader}>
+                        <div style={styles.iconBox('#3b82f6')}><MessageSquare size={24} /></div>
+                        <span style={{ fontSize: '12px', color: '#6b7280', fontWeight: '500' }}>No trend yet</span>
+                    </div>
+                    <div>
+                        <span style={styles.statLabel}>Total Complaints</span>
+                        <h3 style={styles.statValue}>{stats.total}</h3>
+                    </div>
+                </div>
+                <div className="cm-stat-pending" style={styles.statCard}>
+                    <div style={styles.statHeader}>
+                        <div style={styles.iconBox('#f59e0b')}><AlertCircle size={24} /></div>
+                        <span style={{ fontSize: '12px', color: '#f59e0b', fontWeight: '500' }}>Requires attention</span>
+                    </div>
+                    <div>
+                        <span style={styles.statLabel}>Pending</span>
+                        <h3 style={styles.statValue}>{stats.pending}</h3>
+                    </div>
+                </div>
+                <div className="cm-stat-progress" style={styles.statCard}>
+                    <div style={styles.statHeader}>
+                        <div style={styles.iconBox('#6366f1')}><Clock size={24} /></div>
+                        <span style={{ fontSize: '12px', color: '#6366f1', fontWeight: '500' }}>Active resolutions</span>
+                    </div>
+                    <div>
+                        <span style={styles.statLabel}>In Progress</span>
+                        <h3 style={styles.statValue}>{stats.inProgress}</h3>
+                    </div>
+                </div>
+                <div className="cm-stat-resolved" style={styles.statCard}>
+                    <div style={styles.statHeader}>
+                        <div style={styles.iconBox('#10b981')}><CheckCircle size={24} /></div>
+                        <span style={{ fontSize: '12px', color: '#10b981', fontWeight: '500' }}>{Math.round((stats.resolved / stats.total) * 100 || 0)}% completed</span>
+                    </div>
+                    <div>
+                        <span style={styles.statLabel}>Resolved</span>
+                        <h3 style={styles.statValue}>{stats.resolved}</h3>
+                    </div>
+                </div>
+            </div>
+
+            {/* Controls & Filter Bar */}
+                <div className="cm-controls-bar" style={styles.controlsBar}>
+                <div className="cm-search-box" style={styles.searchBox}>
+                    <div className="cm-search-shell">
+                        <span className="cm-search-icon" aria-hidden="true"><Search size={18} /></span>
+                        <input 
+                            type="text"
+                            aria-label="Search complaints"
+                            placeholder="Search by complaint ID, resident name, or category"
+                            style={styles.searchInput}
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                        {searchTerm ? (
+                            <button
+                                type="button"
+                                className="cm-search-clear"
+                                onClick={() => setSearchTerm('')}
+                                aria-label="Clear search"
+                            >
+                                Clear
+                            </button>
+                        ) : null}
+                    </div>
+                </div>
+                <div className="cm-filter-group" style={styles.filterGroup}>
+                    <select 
+                        className="cm-filter-select"
+                        style={styles.filterSelect}
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value)}
+                    >
+                        <option value="All">All Statuses</option>
+                        <option value="Pending">Pending</option>
+                        <option value="In Progress">In Progress</option>
+                        <option value="Resolved">Resolved</option>
+                    </select>
+                    <Button 
+                        className="cm-action-btn"
+                        variant="outline" 
+                        style={{ height: '42px', display: 'flex', alignItems: 'center', gap: '8px', padding: '0 16px', whiteSpace: 'nowrap', flexShrink: 0 }} 
+                        icon={<Filter size={16} />}
+                    >
+                        Advanced
+                    </Button>
+                    <Button 
+                        className="cm-action-btn"
+                        variant="secondary" 
+                        style={{ height: '42px', display: 'flex', alignItems: 'center', gap: '8px', padding: '0 16px', whiteSpace: 'nowrap', flexShrink: 0 }} 
+                        icon={<Download size={16} />}
+                    >
+                        Export CSV
+                    </Button>
+                </div>
+            </div>
+
+            {/* Modern Table */}
+            <div style={styles.tableContainer}>
+                <div style={styles.tableHeader}>
+                    <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '600', color: '#111827' }}>All Complaints</h3>
+                    <span style={{ fontSize: '13px', color: '#6b7280' }}>Showing {loading ? 'Loading...' : filteredComplaints.length} entries</span>
+                </div>
+                {loading ? (
+                    <div style={{ padding: '40px', textAlign: 'center', color: '#6b7280' }}>Loading complaints...</div>
+                ) : (
+                <div className="cm-table-scroll" style={{ overflowX: 'auto' }}>
+                    <table className="table cm-table" style={{ width: '100%', minWidth: '920px', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
+                        <thead>
+                            <tr style={{ borderBottom: '1px solid #e5e7eb', backgroundColor: '#f9fafb' }}>
+                                <th style={{ width: '12%', padding: '16px 20px', textAlign: 'left', fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', color: '#6b7280', letterSpacing: '0.04em' }}>ID / Date</th>
+                                <th style={{ width: '18%', padding: '16px 20px', textAlign: 'left', fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', color: '#6b7280', letterSpacing: '0.04em' }}>Resident</th>
+                                <th style={{ width: '14%', padding: '16px 20px', textAlign: 'left', fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', color: '#6b7280', letterSpacing: '0.04em' }}>Category</th>
+                                <th style={{ width: '24%', padding: '16px 20px', textAlign: 'left', fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', color: '#6b7280', letterSpacing: '0.04em' }}>Description</th>
+                                <th style={{ width: '11%', padding: '16px 20px', textAlign: 'left', fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', color: '#6b7280', letterSpacing: '0.04em' }}>Priority</th>
+                                <th style={{ width: '11%', padding: '16px 20px', textAlign: 'center', fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', color: '#6b7280', letterSpacing: '0.04em' }}>Status</th>
+                                <th style={{ width: '10%', padding: '16px 20px', textAlign: 'right', fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', color: '#6b7280', letterSpacing: '0.04em' }}>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {filteredComplaints.length > 0 ? (
+                                filteredComplaints.map((complaint) => (
+                                    <tr key={complaint.id} className="cm-table-row" style={{ transition: 'background-color 0.15s' }}>
+                                        <td style={{ padding: '16px 24px', verticalAlign: 'middle' }}>
+                                            <div style={{ fontWeight: '600', color: '#111827' }}>{complaint.id.substring(0, 8).toUpperCase()}</div>
+                                            <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '4px' }}>{complaint.displayDate}</div>
+                                        </td>
+                                        <td style={{ padding: '16px 24px', verticalAlign: 'middle' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#e0e7ff', color: '#4f46e5', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '600', fontSize: '12px' }}>
+                                                    {complaint.residentName.charAt(0)}
+                                                </div>
+                                                <div>
+                                                    <div style={{ fontWeight: '500', color: '#374151' }}>{complaint.residentName}</div>
+                                                    <div style={{ fontSize: '12px', color: '#6b7280' }}>{complaint.residentFlat}</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td style={{ padding: '16px 24px', verticalAlign: 'middle' }}>
+                                            <span style={{ padding: '4px 10px', backgroundColor: '#f3f4f6', borderRadius: '6px', fontSize: '12px', color: '#4b5563', fontWeight: '500' }}>
+                                                {complaint.category}
+                                            </span>
+                                        </td>
+                                        <td style={{ padding: '16px 24px', verticalAlign: 'middle' }}>
+                                            <div style={{ 
+                                                whiteSpace: 'nowrap', 
+                                                overflow: 'hidden', 
+                                                textOverflow: 'ellipsis', 
+                                                color: '#4b5563',
+                                                maxWidth: '100%',
+                                                display: 'block'
+                                            }}>
+                                                {complaint.description}
+                                            </div>
+                                        </td>
+                                        <td style={{ padding: '16px 24px', verticalAlign: 'middle' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: getPriorityColor('Medium') }}></div>
+                                                <span style={{ fontSize: '13px', color: '#374151' }}>Medium</span>
+                                            </div>
+                                        </td>
+                                        <td style={{ padding: '16px 24px', textAlign: 'center', verticalAlign: 'middle' }}>
+                                            <StatusBadge status={complaint.status} />
+                                        </td>
+                                        <td style={{ padding: '16px 24px', textAlign: 'right', verticalAlign: 'middle' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                                                <button 
+                                                    style={{...styles.rowActionBtn, color: '#3b82f6', backgroundColor: '#eff6ff'}} 
+                                                    title="View Details"
+                                                    onClick={() => handleViewDetails(complaint)}
+                                                >
+                                                    <Eye size={16} />
+                                                </button>
+                                                <button 
+                                                    style={{...styles.rowActionBtn, color: '#ef4444', backgroundColor: '#fef2f2'}} 
+                                                    title="Delete"
+                                                    onClick={() => handleDelete(complaint.id)}
+                                                >
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))
+                            ) : complaints.length === 0 ? (
+                                <tr>
+                                    <td colSpan="7" style={{ padding: '40px', textAlign: 'center', color: '#6b7280' }}>
+                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+                                            <Search size={32} style={{ opacity: 0.2 }} />
+                                            <p>No complaints yet</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ) : (
+                                <tr>
+                                    <td colSpan="7" style={{ padding: '40px', textAlign: 'center', color: '#6b7280' }}>
+                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+                                            <Search size={32} style={{ opacity: 0.2 }} />
+                                            <p>No complaints found matching your filters.</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+                )}
+            </div>
+
+            {/* Detail Modal */}
+            <Modal
+                isOpen={isModalOpen}
+                onClose={handleCloseModal}
+                title="Complaint Details"
+            >
+                {selectedComplaint && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f3f4f6', paddingBottom: '16px' }}>
+                            <div>
+                                <h3 style={{ margin: 0, fontSize: '18px', color: '#111827' }}>#{selectedComplaint.id.substring(0, 8).toUpperCase()}</h3>
+                                <p style={{ margin: '4px 0 0', color: '#6b7280', fontSize: '14px' }}>Posted on {selectedComplaint.displayDate}</p>
+                            </div>
+                            <StatusBadge status={selectedComplaint.status} />
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                            <div>
+                                <label style={{ display: 'block', textTransform: 'uppercase', fontSize: '11px', color: '#9ca3af', fontWeight: '600', marginBottom: '4px', letterSpacing: '0.05em' }}>Resident</label>
+                                <div style={{ fontWeight: '500', color: '#111827' }}>{selectedComplaint.residentName}</div>
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', textTransform: 'uppercase', fontSize: '11px', color: '#9ca3af', fontWeight: '600', marginBottom: '4px', letterSpacing: '0.05em' }}>Category</label>
+                                <div style={{ fontWeight: '500', color: '#111827' }}>{selectedComplaint.category}</div>
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', textTransform: 'uppercase', fontSize: '11px', color: '#9ca3af', fontWeight: '600', marginBottom: '4px', letterSpacing: '0.05em' }}>Flat Number</label>
+                                <div style={{ fontWeight: '500', color: '#111827' }}>{selectedComplaint.residentFlat}</div>
+                            </div>
+                        </div>
+
+                        <div style={{ backgroundColor: '#f9fafb', padding: '16px', borderRadius: '8px' }}>
+                            <label style={{ display: 'block', textTransform: 'uppercase', fontSize: '11px', color: '#9ca3af', fontWeight: '600', marginBottom: '8px', letterSpacing: '0.05em' }}>Description</label>
+                            <p style={{ margin: 0, color: '#374151', lineHeight: '1.5' }}>{selectedComplaint.description}</p>
+                        </div>
+
+                        <div>
+                            <label style={{ display: 'block', textTransform: 'uppercase', fontSize: '11px', color: '#9ca3af', fontWeight: '600', marginBottom: '8px', letterSpacing: '0.05em' }}>Update Status</label>
+                            <select 
+                                value={statusUpdate} 
+                                onChange={(e) => setStatusUpdate(e.target.value)}
+                                style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #d1d5db', fontSize: '14px' }}
+                            >
+                                <option value="Pending">Pending</option>
+                                <option value="In Progress">In Progress</option>
+                                <option value="Resolved">Resolved</option>
+                            </select>
+                        </div>
+
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '10px' }}>
+                            <Button variant="outline" onClick={handleCloseModal}>Cancel</Button>
+                            <Button variant="primary" onClick={handleStatusChange}>Save Changes</Button>
+                        </div>
+                    </div>
+                )}
+            </Modal>
+        </div>
+    );
+};
+export default ComplaintManagement;
