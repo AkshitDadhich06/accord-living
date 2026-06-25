@@ -22,15 +22,11 @@ Built with React + Firebase, it handles everything from onboarding & billing to 
 
 ## 📸 Screenshots
 
-
 <img width="869" height="484" alt="Admin Dashboard" src="https://github.com/user-attachments/assets/fdcc9911-0cf4-48a0-98cc-4ba1c94f1aa8" />
-
 
 <img width="878" height="473" alt="Resident Dashboard" src="https://github.com/user-attachments/assets/21d9719b-d42d-4beb-848d-31f24a98dede" />
 
-
 <img width="882" height="481" alt="Visitor Pre-Approval" src="https://github.com/user-attachments/assets/1d008fc0-5770-472e-b09e-ccd7bd9eaf2c" />
-
 
 <img width="884" height="484" alt="Security Gateway" src="https://github.com/user-attachments/assets/563149db-ed83-4fa7-be8a-d7db9947aedc" />
 
@@ -75,7 +71,70 @@ Built with React + Firebase, it handles everything from onboarding & billing to 
 | Backend / Auth | Firebase Authentication |
 | Database | Cloud Firestore (real-time) |
 | Hosting | Vercel |
+| PDF / Invoice | Custom PDF & Invoice generators |
 | UI | Custom component library with dark mode support |
+
+---
+
+## 🏗️ Architecture
+
+```
+accord-living/
+├── pages/
+│   ├── admin/          # Admin portal pages
+│   ├── resident/       # Resident portal pages
+│   ├── security/       # Security portal pages
+│   └── auth/           # Login & society creation
+├── services/           # Firebase service layer (per domain)
+│   ├── billService.js
+│   ├── visitorService.js
+│   └── complaintService.js  # 54 service modules total
+├── context/
+│   ├── AuthContext.js  # Firebase Auth + user profile
+│   └── ThemeContext.js
+├── components/
+│   └── shared/         # Toast, NotificationPanel, etc.
+└── utils/
+    ├── invoiceGenerator.js
+    └── approvalPDFGenerator.js
+```
+
+### 🔐 Role-Based Access
+
+| Role | Access |
+|------|--------|
+| Admin | Full platform control — `/admin/*` routes |
+| Resident | Personal portal — `/resident/*` routes |
+| Security | Gate management — `/security/*` routes |
+
+- Wrong-role users are automatically redirected to their own dashboard
+- All routes are protected via `ProtectedRoute.js` with Firebase Auth enforcement
+
+### 🗄️ Firestore Collections
+
+| Collection | Description |
+|-----------|-------------|
+| users | User profiles with role + societyId |
+| societies | Society metadata |
+| flats | Flat registry per society |
+| residents | Resident records |
+| staff | Staff/security members |
+| bills | Maintenance bills |
+| complaints | Resident complaints |
+| announcements | Society notices & events |
+| visitors | Visitor check-in/out logs |
+| visitor_preapprovals | Pre-approved visitor requests |
+| visitor_blacklist | Blacklisted individuals |
+| attendance | Staff attendance records |
+| emergencies | Emergency alerts & SOS |
+| documents | Society documents |
+| app_settings | Society-level settings |
+
+### ⚡ Multi-Tenant Model
+Every piece of business data is scoped by `societyId`. Each society operates in complete isolation — residents, billing, complaints & visitors never cross between societies.
+
+### 🔄 Real-Time Architecture
+All modules use Firebase `onSnapshot` listeners. Changes made in any portal reflect instantly across all connected sessions — no polling, no page refresh required.
 
 ---
 
@@ -109,6 +168,15 @@ VITE_FIREBASE_PROJECT_ID=your_project_id
 VITE_FIREBASE_STORAGE_BUCKET=your_storage_bucket
 VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
 VITE_FIREBASE_APP_ID=your_app_id
+```
+
+### Available Scripts
+
+```bash
+npm run dev      # Start development server
+npm run build    # Build for production
+npm run preview  # Preview production build
+npm run lint     # Run eslint
 ```
 
 ---
