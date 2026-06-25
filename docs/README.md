@@ -63,11 +63,9 @@ Built with React + Firebase, it handles everything from onboarding & billing to 
 
 ---
 
-## 🏆 Hackathon
+## 🏆 Recognition
 
-Built for **RECKON 7.0 — National Hackathon** | 🥈 **Top 10 Finalist among 100+ national teams**
-
-Delivered as a fully working prototype under 24 hours.
+**RECKON 7.0 National Hackathon** — Top 10 Finalist among 100+ national teams
 
 ---
 
