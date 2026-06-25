@@ -22,16 +22,16 @@ Built with React + Firebase, it handles everything from onboarding & billing to 
 
 ## 📸 Screenshots
 
-**Admin Dashboard — Operations Command Center**
+
 <img width="869" height="484" alt="Admin Dashboard" src="https://github.com/user-attachments/assets/fdcc9911-0cf4-48a0-98cc-4ba1c94f1aa8" />
 
-**Resident Dashboard**
+
 <img width="878" height="473" alt="Resident Dashboard" src="https://github.com/user-attachments/assets/21d9719b-d42d-4beb-848d-31f24a98dede" />
 
-**Visitor Pre-Approval with QR Code**
+
 <img width="882" height="481" alt="Visitor Pre-Approval" src="https://github.com/user-attachments/assets/1d008fc0-5770-472e-b09e-ccd7bd9eaf2c" />
 
-**Security Gateway**
+
 <img width="884" height="484" alt="Security Gateway" src="https://github.com/user-attachments/assets/563149db-ed83-4fa7-be8a-d7db9947aedc" />
 
 ---
